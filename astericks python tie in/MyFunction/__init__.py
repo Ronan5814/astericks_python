@@ -1,21 +1,28 @@
 import logging
 import azure.functions as func
+import json
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
-    name = req.params.get('name')
-    if not name:
-        try:
-            req_body = req.get_json()
-        except ValueError:
-            pass
-        else:
-            name = req_body.get('name')
 
-    if name:
-        return func.HttpResponse(f"Hello, {name}!")
-    else:
+    try:
+        req_body = req.get_json()  # Parse the incoming JSON body
+        message = req_body.get('message')
+
+        if message:
+            return func.HttpResponse(
+                json.dumps({"response": f"Received your message: {message}"}),
+                mimetype="application/json"
+            )
+        else:
+            return func.HttpResponse(
+                json.dumps({"error": "No 'message' field found in the request body."}),
+                status_code=400,
+                mimetype="application/json"
+            )
+    except ValueError:
         return func.HttpResponse(
-            "Please pass a name on the query string or in the request body.",
-            status_code=400
+            json.dumps({"error": "Invalid JSON"}),
+            status_code=400,
+            mimetype="application/json"
         )
